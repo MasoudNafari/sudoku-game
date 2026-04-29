@@ -1,31 +1,47 @@
-name: Download Model with huggingface_hub
+name: Download Model from Hugging Face to GitHub
 
 on:
-  workflow_dispatch:
+  workflow_dispatch:  # برای اجرای دستی از تب Actions
 
 jobs:
   download:
     runs-on: ubuntu-latest
+    
     steps:
-      - uses: actions/checkout@v4
-      
-      - name: Setup Python
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          lfs: true  # برای پشتیبانی از فایل‌های بزرگ
+
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
-      
+          python-version: '3.10'
+
       - name: Install huggingface_hub
-        run: pip install huggingface_hub
-        
-      - name: Download model
         run: |
-          huggingface-cli download roshan-research/hazm-postagger \
-            --local-dir my_downloaded_model \
-            --token $HF_TOKEN
-      
-      # - name: Clone public model
-      #   run: |
-      #     # فقط برای مدل‌های عمومی که gated: false هستند
-      #     git clone https://huggingface.co/roshan-research/hazm-postagger my_downloaded_model
-      #     cd my_downloaded_model
-      #     git lfs pull
+          pip install -U "huggingface_hub[cli]"
+
+      - name: Download model with hf CLI
+        run: |
+          # دانلود مدل hazm-postagger به پوشه 'model'
+          # از --local-dir برای ذخیره مستقیم در پوشه استفاده می‌شود
+          hf download roshan-research/hazm-postagger \
+            --local-dir ./model \
+            --local-dir-use-symlinks False
+          
+          # همچنین می‌توانید فایل‌های خاص را دانلود کنید
+          # hf download roshan-research/hazm-postagger config.json pytorch_model.bin --local-dir ./model
+
+      - name: List downloaded files (for verification)
+        run: |
+          ls -la ./model/
+          du -sh ./model/
+
+      - name: Commit and push model to repository
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add model/
+          git diff --cached --quiet || git commit -m "Add hazm-postagger model from Hugging Face"
+          git push
