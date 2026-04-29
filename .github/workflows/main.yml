@@ -1,30 +1,31 @@
-name: Download Model from Hugging Face
+name: Download Model with huggingface_hub
 
 on:
-  workflow_dispatch:  # Allows you to run the workflow manually from the GitHub Actions tab
+  workflow_dispatch:
 
 jobs:
   download:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Install Git LFS
+      - uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      
+      - name: Install huggingface_hub
+        run: pip install huggingface_hub
+        
+      - name: Download model
         run: |
-          sudo apt-get update
-          sudo apt-get install git-lfs
-          git lfs install
-
-      - name: Clone model from Hugging Face
-        run: |
-          # این دستور، مدل را در پوشه 'my_downloaded_model' دانلود می‌کند
-          git lfs clone https://huggingface.co/roshan-research/hazm-postagger my_downloaded_model
-
-      - name: Commit and push changes
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add my_downloaded_model
-          git commit -m "Add downloaded model from Hugging Face" || echo "No changes to commit"
-          git push
+          huggingface-cli download roshan-research/hazm-postagger \
+            --local-dir my_downloaded_model \
+            --token $HF_TOKEN
+      
+      # - name: Clone public model
+      #   run: |
+      #     # فقط برای مدل‌های عمومی که gated: false هستند
+      #     git clone https://huggingface.co/roshan-research/hazm-postagger my_downloaded_model
+      #     cd my_downloaded_model
+      #     git lfs pull
